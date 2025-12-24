@@ -18,18 +18,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.marchmadness.data.Datasource
@@ -66,56 +66,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun TeamSlideshow(teamList: List<Team>, modifier: Modifier = Modifier) {
-    var index by rememberSaveable { mutableStateOf(0) }
-    var jumpText by rememberSaveable { mutableStateOf("") }
-
-    val size = teamList.size
-    if (size == 0) return
-    index = ((index % size) + size) % size
-    val team = teamList[index]
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        TeamCard(
-            team = team,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { index = (index - 1 + size) % size }) { Text("Back") }
-            Spacer(Modifier.width(12.dp))
-            Text("${index + 1} / $size", modifier = Modifier.padding(horizontal = 4.dp))
-            Spacer(Modifier.width(12.dp))
-            Button(onClick = { index = (index + 1) % size }) { Text("Next") }
-        }
-
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = jumpText,
-                onValueChange = { jumpText = it },
-                label = { Text("Go to # (1-$size)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = {
-                val n = jumpText.toIntOrNull()
-                if (n != null && n in 1..size) {
-                    index = n - 1
-                }
-            }) { Text("Go") }
-        }
-    }
+enum class Screen {
+    HOME,
+    CONTACT
 }
+
 @Composable
 fun TeamCard(team: Team, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
@@ -146,16 +101,107 @@ fun TeamList(teamList: List<Team>, modifier: Modifier = Modifier) {
         modifier = modifier
     ) {
         items(teamList) { team ->
-            TeamCard(
-                team = team,
-                modifier = Modifier.padding(8.dp)
-            )
+            TeamCard(team = team, modifier = Modifier.padding(8.dp))
         }
     }
 }
+
+@Composable
+fun HomeScreen(
+    onContactClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(8.dp)
+    ) {
+        Text(
+            text = "College Teams",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier
+                .padding(8.dp)
+                .align(Alignment.CenterHorizontally)
+        )
+
+        TeamList(
+            teamList = Datasource().loadTeams(),
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 8.dp)
+        )
+
+        Button(
+            onClick = onContactClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 8.dp)
+        ) {
+            Text(text = "Go to Contact Page")
+        }
+    }
+}
+
+@Composable
+fun ContactScreen(
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Contact",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Image(
+            painter = painterResource(id = R.drawable.ncaa_logo),
+            contentDescription = "NCAA Logo",
+            modifier = Modifier
+                .size(200.dp)
+                .align(Alignment.CenterHorizontally),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "National Collegiate Athletic Association",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Website: www.ncaa.org")
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "Email: info@ncaa.org")
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "Phone: (317) 917-6222")
+        }
+    }
+}
+
 @Composable
 fun TeamsApp(modifier: Modifier = Modifier) {
+    var currentScreen by rememberSaveable { mutableStateOf(Screen.HOME) }
     val layoutDirection = LocalLayoutDirection.current
+
     Surface(
         modifier = modifier
             .fillMaxSize()
@@ -167,7 +213,10 @@ fun TeamsApp(modifier: Modifier = Modifier) {
                     .calculateEndPadding(layoutDirection),
             )
     ) {
-        TeamSlideshow(teamList = Datasource().loadTeams())
+        when (currentScreen) {
+            Screen.HOME -> HomeScreen(onContactClick = { currentScreen = Screen.CONTACT })
+            Screen.CONTACT -> ContactScreen(onBackClick = { currentScreen = Screen.HOME })
+        }
     }
 }
 
@@ -178,5 +227,3 @@ fun TeamsAppPreview() {
         TeamsApp()
     }
 }
-
-
